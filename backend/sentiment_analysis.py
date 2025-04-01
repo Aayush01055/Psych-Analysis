@@ -9,3 +9,4 @@ with open(model_path, "rb") as file:
 
 def predict_sentiment(text):
     return sentiment_model.predict([text])[0]
+

@@ -9,3 +9,5 @@ with open(model_path, "rb") as file:
 
 def predict_emotion(text):
     return emotion_model.predict([text])[0]
+
+

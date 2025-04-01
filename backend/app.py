@@ -1,26 +1,40 @@
-from flask import Flask, request, jsonify
 import pandas as pd
-from preprocess import preprocess_text
-from sentiment_analysis import predict_sentiment
-from emotion_analysis import predict_emotion
-from topic_modeling import extract_topics
+import pickle
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score
 
-app = Flask(__name__)
+# Load dataset
+df = pd.read_csv("/workspaces/Psych-Analysis/backend/data/sentiment_emotion_psych_dataset.csv")  # Ensure correct path
+df = df.dropna()
 
-@app.route('/analyze', methods=['POST'])
-def analyze():
-    file = request.files['file']
-    df = pd.read_csv(file)
-    
-    df['Processed_Response'] = df['Response'].apply(preprocess_text)
-    df['Sentiment'] = df['Processed_Response'].apply(predict_sentiment)
-    df['Emotion'] = df['Processed_Response'].apply(predict_emotion)
-    topics = extract_topics(df['Processed_Response'].tolist())
+# Ensure correct column names exist
+if 'Sentiment' not in df.columns or 'Response' not in df.columns:
+    raise ValueError("Dataset must contain 'Sentiment' and 'Response' columns.")
 
-    return jsonify({
-        "results": df[['Response', 'Sentiment', 'Emotion']].to_dict(orient="records"),
-        "topics": topics
-    })
+# Filter for valid sentiment labels
+df = df[df['Sentiment'].isin(['Positive', 'Negative', 'Neutral'])]
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# Train-Test Split
+X_train, X_test, y_train, y_test = train_test_split(df["Response"], df["Sentiment"], test_size=0.2, random_state=42)
+
+# Create pipeline
+model = Pipeline([
+    ("tfidf", TfidfVectorizer(stop_words="english")),
+    ("classifier", MultinomialNB())
+])
+
+# Train the model
+model.fit(X_train, y_train)
+
+# Evaluate model
+y_pred = model.predict(X_test)
+print(f"Sentiment Model Accuracy: {accuracy_score(y_test, y_pred):.2f}")
+
+# Save the model
+with open("/workspaces/Psych-Analysis/backend/models/sentiment_model.pkl", "wb") as file:
+    pickle.dump(model, file)
+
+print("✅ Sentiment model trained and saved successfully!")
