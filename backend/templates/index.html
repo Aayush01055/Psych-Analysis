@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindMeter | Psychological Text Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-light: #4895ef;
+            --secondary: #3f37c9;
+            --dark: #1a1a2e;
+            --light: #f8f9fa;
+            --success: #4cc9f0;
+            --warning: #f8961e;
+            --danger: #f72585;
+            --gray: #adb5bd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f7ff;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--gray);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .input-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .output-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 1rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 1rem;
+            resize: vertical;
+            margin-bottom: 1rem;
+            transition: border 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn i {
+            margin-right: 0.5rem;
+        }
+
+        .examples {
+            margin-top: 1.5rem;
+        }
+
+        .examples h3 {
+            font-size: 1rem;
+            color: var(--gray);
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .example-chip {
+            display: inline-block;
+            background-color: #f0f4ff;
+            color: var(--primary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .example-chip:hover {
+            background-color: #e0e8ff;
+            transform: translateY(-1px);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(67, 97, 238, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .analysis-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+            border-left: 4px solid var(--primary);
+        }
+
+        .analysis-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--secondary);
+            display: flex;
+            align-items: center;
+        }
+
+        .analysis-card h3 i {
+            margin-right: 0.75rem;
+            color: var(--primary);
+        }
+
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .confidence {
+            display: inline-block;
+            background-color: #f0f4ff;
+            color: var(--primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .chart-container {
+            margin-top: 1rem;
+            height: 200px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 0;
+            color: var(--gray);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #e0e0e0;
+        }
+
+        .error-message {
+            color: var(--danger);
+            background-color: #fff0f3;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--gray);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .probability-item {
+            margin-bottom: 1rem;
+        }
+
+        .probability-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .probability-bar-container {
+            height: 8px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .probability-bar {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>MindMeter</h1>
+            <p class="subtitle">Analyze the psychological state behind any text</p>
+        </header>
+
+        <div class="app-container">
+            <div class="input-section">
+                <div class="error-message" id="errorMessage"></div>
+                
+                <textarea id="textInput" placeholder="Type or paste your text here to analyze its sentiment, emotions, and psychological state..."></textarea>
+                
+                <button class="btn" id="analyzeBtn" onclick="analyzeText()">
+                    <i>🔍</i> Analyze Text
+                </button>
+                
+                <div class="examples">
+                    <h3>Try these examples:</h3>
+                    <div class="example-chip" onclick="useExample(this)">I'm feeling great about this new opportunity!</div>
+                    <div class="example-chip" onclick="useExample(this)">I'm overwhelmed with all these responsibilities</div>
+                    <div class="example-chip" onclick="useExample(this)">I feel lonely and disconnected from everyone</div>
+                    <div class="example-chip" onclick="useExample(this)">This peaceful moment makes me feel serene</div>
+                    <div class="example-chip" onclick="useExample(this)">I don't like this situation at all</div>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing your text...</p>
+                </div>
+
+                <div class="empty-state" id="emptyState">
+                    <div>📊</div>
+                    <p>Enter some text to see the analysis results</p>
+                </div>
+
+                <div class="results" id="results">
+                    <div class="tabs">
+                        <div class="tab active" onclick="switchTab('summary')">Summary</div>
+                        <div class="tab" onclick="switchTab('details')">Details</div>
+                        <div class="tab" onclick="switchTab('probabilities')">Probabilities</div>
+                    </div>
+
+                    <div class="tab-content active" id="summaryTab">
+                        <div class="analysis-card">
+                            <h3><i>😊</i> Sentiment</h3>
+                            <div class="result-value" id="sentimentResult">-</div>
+                            <div class="chart-container">
+                                <canvas id="sentimentChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="analysis-card">
+                            <h3><i>😢</i> Emotion</h3>
+                            <div class="result-value" id="emotionResult">-</div>
+                            <div class="chart-container">
+                                <canvas id="emotionChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="analysis-card">
+                            <h3><i>🧠</i> Psychological State</h3>
+                            <div class="result-value" id="psychResult">-</div>
+                            <div class="chart-container">
+                                <canvas id="psychChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="detailsTab">
+                        <div class="analysis-card">
+                            <h3><i>🔍</i> Detailed Analysis</h3>
+                            <div id="detailedResults"></div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="probabilitiesTab">
+                        <div class="analysis-card">
+                            <h3><i>📈</i> Probability Distribution</h3>
+                            <div id="probabilityResults"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>MindMeter Psychological Analysis Tool | Powered by AI</p>
+        </div>
+    </div>
+
+    <script>
+        // Charts
+        let sentimentChart, emotionChart, psychChart;
+
+        function useExample(element) {
+            document.getElementById('textInput').value = element.textContent;
+            analyzeText();
+        }
+
+        function switchTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Deactivate all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Activate selected tab
+            document.getElementById(tabId + 'Tab').classList.add('active');
+            document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+        }
+
+        function analyzeText() {
+            const text = document.getElementById('textInput').value.trim();
+            if (!text) {
+                showError("Please enter some text to analyze");
+                return;
+            }
+
+            // UI State
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results').style.display = 'block';
+                
+                updateResults(data);
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'block';
+                showError("Analysis failed: " + error.message);
+            });
+        }
+
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        function updateResults(data) {
+            // Update summary tab
+            if (data.Sentiment) {
+                document.getElementById('sentimentResult').textContent = data.Sentiment;
+                updateSentimentChart(data);
+            }
+            
+            if (data.Emotion) {
+                document.getElementById('emotionResult').textContent = data.Emotion;
+                updateEmotionChart(data);
+            }
+            
+            if (data.Psychological_State) {
+                document.getElementById('psychResult').textContent = data.Psychological_State;
+                updatePsychChart(data);
+            }
+
+            // Update detailed analysis
+            updateDetailedAnalysis(data);
+
+            // Update probability distribution
+            updateProbabilityDistribution(data);
+        }
+
+        function updateSentimentChart(data) {
+            const ctx = document.getElementById('sentimentChart').getContext('2d');
+            
+            if (sentimentChart) {
+                sentimentChart.destroy();
+            }
+            
+            // Default values if no probabilities
+            let positive = 0.33, neutral = 0.33, negative = 0.34;
+            
+            if (data.probabilities?.Sentiment) {
+                positive = data.probabilities.Sentiment.Positive || 0;
+                neutral = data.probabilities.Sentiment.Neutral || 0;
+                negative = data.probabilities.Sentiment.Negative || 0;
+            }
+            
+            sentimentChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Positive', 'Neutral', 'Negative'],
+                    datasets: [{
+                        data: [positive, neutral, negative],
+                        backgroundColor: [
+                            '#4cc9f0',
+                            '#adb5bd',
+                            '#f72585'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateEmotionChart(data) {
+            const ctx = document.getElementById('emotionChart').getContext('2d');
+            
+            if (emotionChart) {
+                emotionChart.destroy();
+            }
+            
+            // Prepare emotion data
+            let emotions = ['Happy', 'Sad', 'Angry', 'Anxious', 'Calm'];
+            let values = [0.2, 0.2, 0.2, 0.2, 0.2];
+            
+            if (data.probabilities?.Emotion) {
+                emotions = Object.keys(data.probabilities.Emotion);
+                values = Object.values(data.probabilities.Emotion);
+            }
+            
+            emotionChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: emotions,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: '#4361ee',
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        function updatePsychChart(data) {
+            const ctx = document.getElementById('psychChart').getContext('2d');
+            
+            if (psychChart) {
+                psychChart.destroy();
+            }
+            
+            // Prepare psych data
+            let states = ['Overwhelmed', 'Purpose-Driven', 'Disconnected', 'FOMO'];
+            let values = [0.25, 0.25, 0.25, 0.25];
+            
+            if (data.probabilities?.Psychological_State) {
+                states = Object.keys(data.probabilities.Psychological_State);
+                values = Object.values(data.probabilities.Psychological_State);
+            }
+            
+            psychChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: states,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: 'rgba(67, 97, 238, 0.2)',
+                        borderColor: '#4361ee',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#4361ee'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 1
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateDetailedAnalysis(data) {
+            let html = `
+                <p><strong>Original Text:</strong> ${document.getElementById('textInput').value}</p>
+                <div class="analysis-detail">
+                    <h4>Sentiment Analysis</h4>
+                    <p>${getSentimentDescription(data.Sentiment)}</p>
+                </div>
+                <div class="analysis-detail">
+                    <h4>Emotional State</h4>
+                    <p>${getEmotionDescription(data.Emotion)}</p>
+                </div>
+                <div class="analysis-detail">
+                    <h4>Psychological Interpretation</h4>
+                    <p>${getPsychDescription(data.Psychological_State)}</p>
+                </div>
+            `;
+            
+            document.getElementById('detailedResults').innerHTML = html;
+        }
+
+        function updateProbabilityDistribution(data) {
+            if (!data.probabilities) {
+                document.getElementById('probabilityResults').innerHTML = 
+                    '<p>Probability distribution not available for this model</p>';
+                return;
+            }
+            
+            let html = '';
+            
+            for (const [category, probs] of Object.entries(data.probabilities)) {
+                html += `<h4>${category.replace('_', ' ')}</h4>`;
+                
+                for (const [label, prob] of Object.entries(probs)) {
+                    const width = prob * 100;
+                    html += `
+                        <div class="probability-item">
+                            <div class="probability-label">
+                                <span>${label}</span>
+                                <span>${width.toFixed(1)}%</span>
+                            </div>
+                            <div class="probability-bar-container">
+                                <div class="probability-bar" style="width: ${width}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            document.getElementById('probabilityResults').innerHTML = html;
+        }
+
+        // Helper functions for descriptions
+        function getSentimentDescription(sentiment) {
+            const descriptions = {
+                'Positive': 'The text expresses generally positive feelings and outlook.',
+                'Negative': 'The text contains negative expressions and emotions.',
+                'Neutral': 'The text is neutral without strong positive or negative sentiment.'
+            };
+            return descriptions[sentiment] || 'Sentiment analysis completed.';
+        }
+
+        function getEmotionDescription(emotion) {
+            const descriptions = {
+                'Happy': 'The text conveys happiness, joy, or contentment.',
+                'Sad': 'The text expresses sadness, grief, or melancholy.',
+                'Angry': 'The text shows signs of anger, frustration, or irritation.',
+                'Anxious': 'The text indicates anxiety, nervousness, or worry.',
+                'Calm': 'The text reflects calmness, peace, or serenity.'
+            };
+            return descriptions[emotion] || 'Emotional state identified.';
+        }
+
+        function getPsychDescription(state) {
+            const descriptions = {
+                'Overwhelmed': 'The person appears to be feeling overloaded or unable to cope with demands.',
+                'Purpose-Driven': 'The text suggests the person is motivated by a clear sense of purpose.',
+                'Disconnected': 'The person seems to feel isolated or lacking meaningful connections.',
+                'FOMO': 'There are indications of fear of missing out or social comparison.',
+                'Reflective': 'The text shows thoughtful consideration or introspection.'
+            };
+            return descriptions[state] || 'Psychological assessment completed.';
+        }
+    </script>
+</body>
+</html>

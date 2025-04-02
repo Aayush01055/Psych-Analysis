@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robust Text Classifier</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .input-section, .results-section, .training-section {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result-item {
+            margin-bottom: 15px;
+        }
+        .result-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .probability-item {
+            margin-left: 20px;
+            margin-bottom: 5px;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Robust Text Classifier</h1>
+    
+    <div class="container">
+        <div class="input-section">
+            <h2>Text Analysis</h2>
+            <textarea id="inputText" placeholder="Enter text to analyze..."></textarea>
+            <button onclick="analyzeText()">Analyze Text</button>
+            <div id="analysisResults" class="results-section" style="display: none;">
+                <h3>Analysis Results</h3>
+                <div id="resultsContent"></div>
+            </div>
+        </div>
+        
+        <div class="training-section">
+            <h2>Train New Model</h2>
+            <p>Upload a CSV file with 'Response', 'Sentiment', 'Emotion', and 'Psychological_State' columns</p>
+            <input type="file" id="trainingFile" accept=".csv">
+            <button onclick="trainModel()">Train Model</button>
+            <div id="trainingResult"></div>
+        </div>
+    </div>
+    
+    <script>
+        function analyzeText() {
+            const text = document.getElementById('inputText').value.trim();
+            if (!text) {
+                alert('Please enter some text to analyze');
+                return;
+            }
+            
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({text: text}),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('resultsContent').innerHTML = 
+                        `<div class="error">Error: ${data.error}</div>`;
+                } else {
+                    let html = '';
+                    
+                    // Display main predictions
+                    for (const [key, value] of Object.entries(data)) {
+                        if (key !== 'probabilities') {
+                            html += `
+                                <div class="result-item">
+                                    <div class="result-label">${key.replace('_', ' ')}:</div>
+                                    <div>${value}</div>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                    // Display probabilities if available
+                    if (data.probabilities && typeof data.probabilities === 'object') {
+                        html += `<div class="result-item"><div class="result-label">Probabilities:</div>`;
+                        for (const [category, probs] of Object.entries(data.probabilities)) {
+                            html += `<div><strong>${category.replace('_', ' ')}:</strong></div>`;
+                            for (const [label, prob] of Object.entries(probs)) {
+                                const percentage = (prob * 100).toFixed(1);
+                                html += `
+                                    <div class="probability-item">
+                                        ${label}: ${percentage}%
+                                    </div>
+                                `;
+                            }
+                        }
+                        html += `</div>`;
+                    }
+                    
+                    document.getElementById('resultsContent').innerHTML = html;
+                }
+                document.getElementById('analysisResults').style.display = 'block';
+            })
+            .catch(error => {
+                document.getElementById('resultsContent').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+                document.getElementById('analysisResults').style.display = 'block';
+            });
+        }
+        
+        function trainModel() {
+            const fileInput = document.getElementById('trainingFile');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a CSV file to upload');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            fetch('/train', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('trainingResult');
+                if (data.error) {
+                    resultDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                } else {
+                    resultDiv.innerHTML = `<div class="success">${data.message}</div>`;
+                }
+            })
+            .catch(error => {
+                document.getElementById('trainingResult').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            });
+        }
+    </script>
+</body>
+</html>
