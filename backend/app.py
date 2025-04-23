@@ -10,7 +10,7 @@ classifier = None
 
 def load_classifier():
     global classifier
-    model_path = 'robust_text_classifier.pkl'
+    model_path = 'robust_text_classifier_v3.pkl'
     if os.path.exists(model_path):
         try:
             classifier = RobustTextClassifier.load_model(model_path)
